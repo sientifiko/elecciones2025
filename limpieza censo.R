@@ -29,7 +29,8 @@ SELECT
   region,
   comuna,
   count(*) pobtotal,
-  sum(cast(tipo_operativo = 1 as numeric)) situacioncalle
+  sum(cast(tipo_operativo = 1 as numeric)) situacioncalle,
+  sum(cast(area = 2 as numeric)) rural
 FROM read_csv_auto('personas_censo2024.csv')
 GROUP BY region, comuna
 ")
@@ -38,7 +39,8 @@ totpopadulta <- dbGetQuery(con, "
 SELECT 
   region,
   comuna,
-  count(*) pobadulta
+  count(*) pobadulta,
+  sum(cast(area = 2 as numeric)) ruraladulta
 FROM read_csv_auto('personas_censo2024.csv')
 where edad_quinquenal >= 20
 GROUP BY region, comuna
@@ -49,7 +51,8 @@ totmigrante <- dbGetQuery(con, "
 SELECT 
   region,
   comuna,
-  count(*) pobmigrante1
+  count(*) pobmigrante1,
+  sum(cast(p25_lug_nacimiento_esp = 862 as numeric)) totalvenezuela1
 FROM read_csv_auto('personas_censo2024.csv')
 where p27_nacionalidad = 3
 GROUP BY region, comuna
@@ -59,7 +62,8 @@ totmigrante2 <- dbGetQuery(con, "
 SELECT 
   region,
   comuna,
-  count(*) pobmigrante2
+  count(*) pobmigrante2,
+  sum(cast(p25_lug_nacimiento_esp = 862 as numeric)) totalvenezuela2
 FROM read_csv_auto('personas_censo2024.csv')
 where p25_lug_nacimiento_rec = 2 
   and (p26_llegada_periodo between 1 and 3)
@@ -70,7 +74,8 @@ totmigranteadulta <- dbGetQuery(con, "
 SELECT 
   region,
   comuna,
-  count(*) pobmigranteadulta1
+  count(*) pobmigranteadulta1,
+  sum(cast(p25_lug_nacimiento_esp = 862 as numeric)) totalvenezadulta1
 FROM read_csv_auto('personas_censo2024.csv')
 where p27_nacionalidad = 3
   and edad_quinquenal >= 20
@@ -81,7 +86,8 @@ totmigranteadulta2 <- dbGetQuery(con, "
 SELECT 
   region,
   comuna,
-  count(*) pobmigranteadulta2
+  count(*) pobmigranteadulta2,
+  sum(cast(p25_lug_nacimiento_esp = 862 as numeric)) totalvenezadulta2
 FROM read_csv_auto('personas_censo2024.csv')
 where p25_lug_nacimiento_rec = 2 
   and (p26_llegada_periodo between 1 and 3)
@@ -105,7 +111,8 @@ escolaridad <- dbGetQuery(con, "
 SELECT 
   region,
   comuna,
-  median(escolaridad) med_esc_adulta
+  median(escolaridad) med_esc_adulta,
+  mean(escolaridad) avg_esc_adulta
 FROM read_csv_auto('personas_censo2024.csv')
 WHERE escolaridad != -99
   and edad_quinquenal >= 20
@@ -159,9 +166,15 @@ conso <- totpop %>%
          p_migranteadulta1 = pobmigranteadulta1/pobadulta,
          p_migrantetotal2 = pobmigrante2/pobtotal,
          p_migranteadulta2 = pobmigranteadulta2/pobadulta,
+         p_migrvenezuela1 = totalvenezuela1/pobtotal,
+         p_migrvenezuela2 = totalvenezuela2/pobtotal,
+         p_migrvenezadulta1 = totalvenezadulta1/pobadulta,
+         p_migrvenezadulta2 = totalvenezadulta2/pobadulta,
          p_desempleo = 1-(ocupada/pea),
          p_escincompleta = pobesc_incompleta/pobadulta,
-         indpermil = (situacioncalle/pobtotal)*1000) %>% 
+         indpermil = (situacioncalle/pobtotal)*1000,
+         p_rural = rural/pobtotal,
+         p_ruraladulta = ruraladulta/pobtotal) %>% 
   mutate(p_escincompleta = ifelse(is.na(p_escincompleta), 
                                   0, p_escincompleta),
          p_migrantetotal2 = ifelse(is.na(p_migrantetotal2),
